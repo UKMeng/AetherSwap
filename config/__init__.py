@@ -58,6 +58,9 @@ def _steam_id_from_cookies(cookies: str) -> Optional[str]:
             if val.isdigit():
                 return val
     return None
+def resolve_steam_id(credentials: Optional[dict] = None) -> str:
+    steam = credentials if credentials is not None else get_steam()
+    return (steam.get("steam_id") or "").strip() or (_steam_id_from_cookies(steam.get("cookies") or "") or "")
 def update_steam_credentials(cookies: str, session_id: str, steam_id: str = None) -> None:
     global _cache
     data = _load().copy()

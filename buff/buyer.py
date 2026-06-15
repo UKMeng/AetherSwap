@@ -69,11 +69,18 @@ def _parse_cookies(cookie_str: str) -> dict:
 def _csrf(cookies_dict: dict) -> str:
     return cookies_dict.get("csrf_token", "").strip('"')
 class BuffBuyer:
-    def __init__(self, cookie_str: str, pay_method: int = PAY_METHOD_ALIPAY, use_ssl: bool = True):
+    def __init__(
+        self,
+        cookie_str: str,
+        pay_method: int = PAY_METHOD_ALIPAY,
+        use_ssl: bool = True,
+        receive_steam_id: str = "",
+    ):
         self.cookies_dict = _parse_cookies(cookie_str)
         self.csrf_token = _csrf(self.cookies_dict)
         self.pay_method = pay_method
         self.use_ssl = use_ssl
+        self.receive_steam_id = str(receive_steam_id or "").strip()
         self.headers = {
             "Host": "buff.163.com",
             "Accept": "application/json, text/javascript, */*; q=0.01",
@@ -83,6 +90,11 @@ class BuffBuyer:
             "Content-Type": "application/json",
             "Accept-Language": "zh-CN,zh;q=0.9",
         }
+    def _set_receive_steamid(self, payload: dict, include_none: bool = True) -> None:
+        if self.receive_steam_id:
+            payload["steamid"] = self.receive_steam_id
+        elif include_none:
+            payload["steamid"] = None
     def _make_request(self, method: str, url: str, **kwargs) -> dict:
         h = self.headers.copy()
         if method.upper() == "GET":
@@ -250,8 +262,7 @@ class BuffBuyer:
             "cdkey_id": "",
             "hide_non_epay": True,
         }
-        if self.pay_method == PAY_METHOD_ALIPAY:
-            payload["steamid"] = None
+        self._set_receive_steamid(payload, include_none=self.pay_method == PAY_METHOD_ALIPAY)
         h = {"Referer": f"https://buff.163.com/goods/{goods_id}?from=market"}
         try:
             res = self._make_request("POST", API_BUY, headers=h, data=json.dumps(payload))
@@ -328,8 +339,7 @@ class BuffBuyer:
             "cdkey_id": "",
             "hide_non_epay": True,
         }
-        if self.pay_method == PAY_METHOD_ALIPAY:
-            payload["steamid"] = None
+        self._set_receive_steamid(payload, include_none=self.pay_method == PAY_METHOD_ALIPAY)
         h = {"Referer": f"https://buff.163.com/goods/{goods_id}?from=market"}
         try:
             res = self._make_request("POST", API_BUY, headers=h, data=json.dumps(payload))
@@ -419,8 +429,8 @@ class BuffBuyer:
             "frozen_amount": float(max_price) * num,
             "max_price": str(max_price),
             "num": str(num),
-            "steamid": None,
         }
+        self._set_receive_steamid(payload)
         h = {
             "Referer": f"https://buff.163.com/goods/{goods_id}",
             "Buff-Cashier-Trace-Id": trace_id,
@@ -475,8 +485,8 @@ class BuffBuyer:
             "batch_id": "",
             "allow_tradable_cooldown": 0,
             "hide_non_epay": False,
-            "steamid": None,
         }
+        self._set_receive_steamid(payload)
         h = {
             "Referer": f"https://buff.163.com/goods/{goods_id}",
             "Buff-Cashier-Trace-Id": trace_id
@@ -506,8 +516,8 @@ class BuffBuyer:
             payload = {
                 "bill_orders": [order_id],
                 "game": game,
-                "steamid": None,
             }
+            self._set_receive_steamid(payload)
             try:
                 res = self._make_request("POST", API_ASK_SELLER_SEND, headers=h, data=json.dumps(payload))
                 if res.get("code") == "OK":

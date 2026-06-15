@@ -5,7 +5,12 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.config_loader import get_buff_credentials, load_app_config_validated
+from app.config_loader import (
+    get_buff_credentials,
+    get_steam_credentials,
+    load_app_config_validated,
+    resolve_steam_id_from_credentials,
+)
 from app.config_schema import DEFAULTS, merge
 from app.pipeline_context import PipelineContext
 from app.pipeline_steps import (
@@ -198,8 +203,14 @@ def _run_pipeline(config: dict) -> None:
         ctx.log("未配置 Buff cookies", "error", category="config")
         ctx.set_status("error", "CONFIG_ERROR")
         return
+    cred_steam = get_steam_credentials()
+    receive_steam_id = resolve_steam_id_from_credentials(cred_steam)
 
     ctx.log("买入阶段启动", "info")
+    if receive_steam_id:
+        ctx.log(f"Buff 下单收货 SteamID={receive_steam_id}", "info", category="buff")
+    else:
+        ctx.log("未配置 Steam steam_id，Buff 下单将使用 Buff 默认收货账号", "warn", category="buff")
     max_discount = pipeline_cfg.get("max_discount")
     sort_by = (cfg.get("steamdt") or cfg.get("iflow") or {}).get("sort_by", "sell")
     sort_labels = {"sell": "最优寄售", "buy": "最优求购"}
@@ -232,7 +243,7 @@ def _run_pipeline(config: dict) -> None:
 
     steam_client = SteamClient()
     analyzer = StabilityAnalyzer(usd_to_cny=USD_TO_CNY_DEFAULT)
-    buyer = create_buff_client_from_config(cred_buff, cfg)
+    buyer = create_buff_client_from_config(cred_buff, cfg, receive_steam_id=receive_steam_id)
     failed_goods_ids_ttl: dict = {}
 
     while True:

@@ -36,9 +36,11 @@ class BuffClient:
         cookies: str,
         pay_method: str = "alipay",
         timeout_sec: int = buff_timeout,
+        receive_steam_id: str = "",
     ) -> None:
         pm = PAY_METHOD_WECHAT if (pay_method or "alipay").strip().lower() == "wechat" else PAY_METHOD_ALIPAY
-        self._buyer = BuffBuyer(cookies, pay_method=pm)
+        self.receive_steam_id = str(receive_steam_id or "").strip()
+        self._buyer = BuffBuyer(cookies, pay_method=pm, receive_steam_id=self.receive_steam_id)
         self._pay_method = pay_method
         self._timeout = timeout_sec
     def get_sell_orders(self, goods_id: int, game: str = "csgo") -> Optional[list]:
@@ -109,8 +111,8 @@ class BuffClient:
                 if bill_order_id:
                     matched.append({"id": o.get("id"), "price": p, "bill_order_id": bill_order_id})
         return matched
-def create_buff_client_from_config(credentials: dict, config: dict) -> BuffClient:
+def create_buff_client_from_config(credentials: dict, config: dict, receive_steam_id: str = "") -> BuffClient:
     cookies = credentials.get("cookies", "")
     buff_cfg = config.get("buff", {})
     pay_method = buff_cfg.get("pay_method", "alipay")
-    return BuffClient(cookies, pay_method=pay_method, timeout_sec=buff_timeout)
+    return BuffClient(cookies, pay_method=pay_method, timeout_sec=buff_timeout, receive_steam_id=receive_steam_id)

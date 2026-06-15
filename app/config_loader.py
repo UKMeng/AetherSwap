@@ -6,6 +6,7 @@ from config import (
     get_buff,
     get_steam,
     load_app_config,
+    resolve_steam_id,
     save_app_config,
     update_buff_credentials,
     update_steam_credentials,
@@ -30,6 +31,9 @@ def update_buff_creds(cookies: str) -> None:
 
 def clear_buff_creds() -> None:
     clear_buff_credentials()
+
+def resolve_steam_id_from_credentials(credentials: dict = None) -> str:
+    return resolve_steam_id(credentials)
 
 def load_app_config_validated() -> dict:
     global _config_cache, _config_cache_ts
