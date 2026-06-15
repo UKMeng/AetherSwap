@@ -80,6 +80,13 @@ def update_buff_credentials(cookies: str) -> None:
     with open(_CREDENTIALS_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     _cache = {}
+
+def clear_buff_credentials() -> None:
+    global _cache
+    data = _load().copy()
+    data.pop("buff", None)
+    save_credentials(data)
+
 _APP_CONFIG_FILE = _CONFIG_DIR / "app_config.json"
 def get_app_config_path() -> Path:
     return _APP_CONFIG_FILE

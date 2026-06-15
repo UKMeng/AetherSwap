@@ -733,6 +733,12 @@
                 <div class="buff-account-title">Cookie 与账号操作</div>
                 <div class="buff-account-desc">打开内置浏览器进入 Buff，登录、切换账号或完成验证后，可把当前 Cookie 保存到本地。</div>
                 <div id="buff-cookie-status" class="buff-cookie-status is-unknown">正在检查 Cookie 状态…</div>
+                <div id="buff-receive-account" class="buff-receive-account is-unknown">
+                  <div class="buff-receive-label">当前收货 Steam 账号</div>
+                  <div id="buff-receive-name" class="buff-receive-name">正在读取…</div>
+                  <div id="buff-receive-meta" class="buff-receive-meta">--</div>
+                  <div id="buff-receive-note" class="buff-receive-note"></div>
+                </div>
               </div>
               <div class="buff-account-actions">
                 <button type="button" id="btn-buff-open" class="btn btn-secondary">
@@ -746,6 +752,8 @@
                 </button>
                 <button type="button" id="btn-buff-save" class="btn btn-primary" disabled>已完成并保存 Cookie</button>
                 <button type="button" id="btn-buff-cancel" class="btn btn-secondary" disabled>取消</button>
+                <button type="button" id="btn-buff-switch-steam-account" class="btn btn-secondary">去账号管理</button>
+                <button type="button" id="btn-buff-clear" class="btn btn-danger-outline">清空 Buff Cookie</button>
               </div>
             </div>
             <div id="buff-account-status" class="field-hint buff-account-status">

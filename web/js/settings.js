@@ -378,21 +378,25 @@ function setBuffAccountActionState(state = "idle") {
   const openBtn = el("btn-buff-open");
   const saveBtn = el("btn-buff-save");
   const cancelBtn = el("btn-buff-cancel");
+  const clearBtn = el("btn-buff-clear");
   if (state === "busy") {
     if (openBtn) openBtn.disabled = true;
     if (saveBtn) saveBtn.disabled = true;
     if (cancelBtn) cancelBtn.disabled = true;
+    if (clearBtn) clearBtn.disabled = true;
     return;
   }
   if (state === "started") {
     if (openBtn) openBtn.disabled = true;
     if (saveBtn) saveBtn.disabled = false;
     if (cancelBtn) cancelBtn.disabled = false;
+    if (clearBtn) clearBtn.disabled = true;
     return;
   }
   if (openBtn) openBtn.disabled = false;
   if (saveBtn) saveBtn.disabled = true;
   if (cancelBtn) cancelBtn.disabled = true;
+  if (clearBtn) clearBtn.disabled = false;
 }
 
 function setBuffCookieStatus(noCookie, text) {
@@ -416,13 +420,58 @@ function setBuffAccountStatus(text) {
   if (statusEl) statusEl.textContent = text;
 }
 
+function renderBuffReceiveAccount(account) {
+  const card = el("buff-receive-account");
+  const nameEl = el("buff-receive-name");
+  const metaEl = el("buff-receive-meta");
+  const noteEl = el("buff-receive-note");
+  if (!card || !nameEl || !metaEl || !noteEl) return;
+  card.classList.remove("is-ok", "is-mismatch", "is-missing", "is-unknown");
+  const info = account || {};
+  const steamId = (info.steam_id || "").trim();
+  const hasCookie = !!info.has_cookie;
+  if (!hasCookie) {
+    card.classList.add("is-missing");
+    nameEl.textContent = "未保存 Steam 收货账号";
+    metaEl.textContent = "请在账号管理中验证 Steam 账号";
+    noteEl.textContent = "";
+    return;
+  }
+  if (!steamId) {
+    card.classList.add("is-missing");
+    nameEl.textContent = "Steam Cookie 已保存，但未识别 SteamID";
+    metaEl.textContent = "建议重新验证当前 Steam 账号";
+    noteEl.textContent = "";
+    return;
+  }
+  const name = info.display_name || info.username || steamId;
+  const meta = [
+    info.username ? `登录名 ${info.username}` : "",
+    `SteamID ${steamId}`,
+  ].filter(Boolean).join(" · ");
+  nameEl.textContent = name;
+  metaEl.textContent = meta;
+  if (info.account_id && info.current_account_id && !info.is_current_account) {
+    card.classList.add("is-mismatch");
+    noteEl.textContent = "与账号管理当前选中的 Steam 账号不一致";
+  } else if (!info.account_id) {
+    card.classList.add("is-mismatch");
+    noteEl.textContent = "未匹配到账号管理中的 Steam 账号";
+  } else {
+    card.classList.add("is-ok");
+    noteEl.textContent = "与账号管理当前账号一致";
+  }
+}
+
 async function refreshBuffAccountStatus() {
   if (!el("buff-cookie-status")) return;
   try {
     const d = await fetchJson(API + "/status");
     setBuffCookieStatus(!!d.buff_no_cookie);
+    renderBuffReceiveAccount(d.steam_receive_account || null);
   } catch {
     setBuffCookieStatus(null);
+    renderBuffReceiveAccount(null);
   }
 }
 
@@ -474,6 +523,33 @@ async function finishBuffAccountBrowser(success) {
     setBuffAccountActionState(buffSettingsReloginStarted ? "started" : "idle");
     setBuffAccountStatus("操作失败：" + (e.message || "请稍后再试"));
     toast("操作失败", e.message || "");
+  }
+}
+
+async function clearBuffAccountData() {
+  if (!confirm("确定清空 Buff Cookie 和内嵌浏览器登录数据吗？清空后需要重新登录 Buff。")) {
+    return;
+  }
+  const clearBtn = el("btn-buff-clear");
+  const originalText = clearBtn ? clearBtn.textContent : "";
+  setBuffAccountActionState("busy");
+  if (clearBtn) clearBtn.textContent = "清空中…";
+  setBuffAccountStatus("正在清空 Buff Cookie 和浏览器登录数据…");
+  try {
+    const r = await fetchJson(API + "/auth/buff/clear", { method: "POST" });
+    if (!r.ok) throw new Error(r.error || "清空失败");
+    buffSettingsReloginStarted = false;
+    setBuffCookieStatus(true);
+    setBuffAccountStatus("Buff Cookie 和浏览器登录数据已清空。");
+    toast("已清空 Buff Cookie");
+    await refreshBuffAccountStatus();
+    if (typeof refreshStatus === "function") await refreshStatus();
+  } catch (e) {
+    setBuffAccountStatus("清空失败：" + (e.message || "请稍后再试"));
+    toast("清空失败", e.message || "");
+  } finally {
+    if (clearBtn) clearBtn.textContent = originalText;
+    setBuffAccountActionState(buffSettingsReloginStarted ? "started" : "idle");
   }
 }
 

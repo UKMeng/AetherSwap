@@ -497,6 +497,10 @@ function bindEvents() {
   el("btn-buff-open")?.addEventListener("click", openBuffAccountBrowser);
   el("btn-buff-save")?.addEventListener("click", () => finishBuffAccountBrowser(true));
   el("btn-buff-cancel")?.addEventListener("click", () => finishBuffAccountBrowser(false));
+  el("btn-buff-clear")?.addEventListener("click", clearBuffAccountData);
+  el("btn-buff-switch-steam-account")?.addEventListener("click", () => {
+    document.querySelector('[data-tab="accounts"]')?.click();
+  });
   el("btn-add-account")?.addEventListener("click", () => openAccountForm());
   el("accounts-search")?.addEventListener("input", (e) => {
     accountsSearchTerm = e.target?.value || "";

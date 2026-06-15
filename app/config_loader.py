@@ -2,6 +2,7 @@ import threading
 import time as _time
 from app.config_schema import DEFAULTS, merge, validate_and_fill
 from config import (
+    clear_buff_credentials,
     get_buff,
     get_steam,
     load_app_config,
@@ -26,6 +27,10 @@ def update_steam_creds(cookies: str, session_id: str) -> None:
     update_steam_credentials(cookies, session_id)
 def update_buff_creds(cookies: str) -> None:
     update_buff_credentials(cookies)
+
+def clear_buff_creds() -> None:
+    clear_buff_credentials()
+
 def load_app_config_validated() -> dict:
     global _config_cache, _config_cache_ts
     now = _time.monotonic()

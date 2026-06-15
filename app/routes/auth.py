@@ -3,6 +3,7 @@ import base64
 import hashlib
 import hmac
 import re
+import shutil
 import struct
 import threading
 import time
@@ -12,6 +13,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from app.state import log, set_buff_auth_expired, set_buff_verification_required
 from app.config_loader import (
+    clear_buff_creds,
     get_steam_credentials,
     load_app_config_validated,
     update_buff_creds,
@@ -35,6 +37,22 @@ _relogin_success = False
 _relogin_error = None
 class ReloginFinishBody(BaseModel):
     success: bool
+def _buff_profile_dir() -> Path:
+    return Path(__file__).resolve().parent.parent.parent / "config" / "playwright_buff"
+def _close_active_buff_relogin() -> bool:
+    global _relogin_success
+    with _relogin_lock:
+        if _relogin_type != "buff" or not _relogin_context:
+            return False
+        context = _relogin_context
+        _relogin_success = False
+    try:
+        context.close()
+    except Exception:
+        pass
+    _relogin_wake.set()
+    _relogin_done.wait(timeout=5)
+    return True
 def _relogin_worker(relogin_type: str) -> None:
     global _relogin_playwright, _relogin_browser, _relogin_context, _relogin_error, _relogin_success
     try:
@@ -44,7 +62,7 @@ def _relogin_worker(relogin_type: str) -> None:
             cur = get_current_account()
             profile_dir = get_profile_dir(cur.get("id") if cur else None)
         else:
-            profile_dir = Path(__file__).resolve().parent.parent.parent / "config" / "playwright_buff"
+            profile_dir = _buff_profile_dir()
         profile_dir.mkdir(parents=True, exist_ok=True)
         context = p.chromium.launch_persistent_context(str(profile_dir), headless=False)
         page = context.pages[0] if context.pages else context.new_page()
@@ -193,6 +211,22 @@ def api_auth_buff_relogin_start():
 @router.post("/api/auth/buff/relogin_finish")
 def api_auth_buff_relogin_finish(body: ReloginFinishBody):
     return _relogin_finish(body.success)
+@router.post("/api/auth/buff/clear")
+def api_auth_buff_clear():
+    try:
+        closed_browser = _close_active_buff_relogin()
+        clear_buff_creds()
+        profile_removed = False
+        profile_dir = _buff_profile_dir()
+        if profile_dir.exists():
+            shutil.rmtree(profile_dir)
+            profile_removed = True
+        set_buff_auth_expired(False)
+        set_buff_verification_required(False)
+        log("已清空 Buff Cookie 和内嵌浏览器登录数据", "info", category="config")
+        return {"ok": True, "closed_browser": closed_browser, "profile_removed": profile_removed}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 @router.get("/api/steam_guard")
 def api_steam_guard():
     cfg = load_app_config_validated()

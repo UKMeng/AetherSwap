@@ -11,16 +11,46 @@ from app.state import (
     get_status,
     set_pending_payment,
 )
-from config import get_buff
+from config import get_buff, get_steam
+from app.accounts import get_current_id, list_accounts
 from pydantic import BaseModel
 router = APIRouter()
 class ConfirmBody(BaseModel):
     ok: bool
+def _steam_id_from_cookies(cookies: str) -> str:
+    for part in (cookies or "").split(";"):
+        item = part.strip()
+        if not item.lower().startswith("steamloginsecure="):
+            continue
+        val = item.split("=", 1)[1].strip()
+        if "%7C%7C" in val:
+            return val.split("%7C%7C", 1)[0].strip()
+        if "||" in val:
+            return val.split("||", 1)[0].strip()
+        return val if val.isdigit() else ""
+    return ""
+def _steam_receive_account_snapshot() -> dict:
+    steam_creds = get_steam()
+    cookies = (steam_creds.get("cookies") or "").strip()
+    steam_id = (steam_creds.get("steam_id") or "").strip() or _steam_id_from_cookies(cookies)
+    accounts = list_accounts()
+    current_id = get_current_id()
+    matched = next((a for a in accounts if (a.get("steam_id") or "").strip() == steam_id), None)
+    return {
+        "steam_id": steam_id,
+        "has_cookie": bool(cookies),
+        "account_id": matched.get("id") if matched else "",
+        "username": matched.get("username") if matched else "",
+        "display_name": matched.get("display_name") if matched else "",
+        "current_account_id": current_id or "",
+        "is_current_account": bool(matched and current_id and matched.get("id") == current_id),
+    }
 @router.get("/api/status")
 def api_status():
     st = get_status()
     buff_creds = get_buff()
     st["buff_no_cookie"] = not bool((buff_creds.get("cookies") or "").strip())
+    st["steam_receive_account"] = _steam_receive_account_snapshot()
     return st
 
 @router.get("/api/log")

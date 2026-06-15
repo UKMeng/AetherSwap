@@ -912,6 +912,48 @@ textarea::placeholder {
   color: var(--text-muted);
 }
 
+.buff-receive-account {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+}
+
+.buff-receive-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+
+.buff-receive-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  overflow-wrap: anywhere;
+}
+
+.buff-receive-meta,
+.buff-receive-note {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.buff-receive-account.is-ok {
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border-color));
+}
+
+.buff-receive-account.is-mismatch {
+  border-color: color-mix(in srgb, var(--warning) 42%, var(--border-color));
+}
+
+.buff-receive-account.is-missing {
+  border-color: color-mix(in srgb, var(--danger) 34%, var(--border-color));
+}
+
 .buff-account-actions {
   display: flex;
   align-items: center;
