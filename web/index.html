@@ -727,6 +727,33 @@
           </div>
 
           <div class="settings-group">
+            <h2>Buff 账号</h2>
+            <div class="buff-account-summary">
+              <div class="buff-account-copy">
+                <div class="buff-account-title">Cookie 与账号操作</div>
+                <div class="buff-account-desc">打开内置浏览器进入 Buff，登录、切换账号或完成验证后，可把当前 Cookie 保存到本地。</div>
+                <div id="buff-cookie-status" class="buff-cookie-status is-unknown">正在检查 Cookie 状态…</div>
+              </div>
+              <div class="buff-account-actions">
+                <button type="button" id="btn-buff-open" class="btn btn-secondary">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                  打开 Buff 浏览器
+                </button>
+                <button type="button" id="btn-buff-save" class="btn btn-primary" disabled>已完成并保存 Cookie</button>
+                <button type="button" id="btn-buff-cancel" class="btn btn-secondary" disabled>取消</button>
+              </div>
+            </div>
+            <div id="buff-account-status" class="field-hint buff-account-status">
+              只想进入 Buff 操作账号时，打开浏览器处理完成后点「取消」关闭；需要刷新 Cookie 时点「已完成并保存 Cookie」。
+            </div>
+          </div>
+
+          <div class="settings-group">
             <h2>Buff 交易策略</h2>
             <div class="form-grid">
               <div class="field">

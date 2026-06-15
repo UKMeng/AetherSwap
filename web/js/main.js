@@ -23,6 +23,7 @@ function tabSwitch(name) {
   if (name === "purchases" || name === "sales" || name === "purchase-history") refreshTransactions();
   if (name === "analytics") refreshAnalytics();
   if (name === "accounts") refreshAccounts();
+  if (name === "settings") refreshBuffAccountStatus();
   if (name === "steam-guard") initSteamGuardPanel();
   if (name !== "steam-guard") stopSteamGuardTimer();
   if (name === "proxy") {
@@ -493,6 +494,9 @@ function bindEvents() {
   );
   el("btn-refresh-inventory")?.addEventListener("click", () => refreshInventory(true));
   el("btn-refresh-sales")?.addEventListener("click", () => refreshTransactions());
+  el("btn-buff-open")?.addEventListener("click", openBuffAccountBrowser);
+  el("btn-buff-save")?.addEventListener("click", () => finishBuffAccountBrowser(true));
+  el("btn-buff-cancel")?.addEventListener("click", () => finishBuffAccountBrowser(false));
   el("btn-add-account")?.addEventListener("click", () => openAccountForm());
   el("accounts-search")?.addEventListener("input", (e) => {
     accountsSearchTerm = e.target?.value || "";

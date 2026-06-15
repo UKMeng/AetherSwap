@@ -3,6 +3,7 @@ let inventoryRefreshSeconds = 60;
 let inventoryTimer = null;
 let currentPriceRefreshMinutes = 10;
 let currentPriceTimer = null;
+let buffSettingsReloginStarted = false;
 async function loadConfig() {
   const d = await fetchJson(API + "/config");
   const c = d.config || {};
@@ -160,6 +161,7 @@ async function loadConfig() {
   if (gSdRegionThreads) gSdRegionThreads.value = sd.max_region_threads ?? "";
   // 加载完成后刷新 UX 状态组件
   updateUXStatus(c);
+  refreshBuffAccountStatus();
 }
 
 function formToConfig() {
@@ -369,6 +371,109 @@ function setupInventoryAutoRefresh() {
     currentPriceTimer = setInterval(() => {
       refreshMarketPrices();
     }, currentPriceRefreshMinutes * 60 * 1000);
+  }
+}
+
+function setBuffAccountActionState(state = "idle") {
+  const openBtn = el("btn-buff-open");
+  const saveBtn = el("btn-buff-save");
+  const cancelBtn = el("btn-buff-cancel");
+  if (state === "busy") {
+    if (openBtn) openBtn.disabled = true;
+    if (saveBtn) saveBtn.disabled = true;
+    if (cancelBtn) cancelBtn.disabled = true;
+    return;
+  }
+  if (state === "started") {
+    if (openBtn) openBtn.disabled = true;
+    if (saveBtn) saveBtn.disabled = false;
+    if (cancelBtn) cancelBtn.disabled = false;
+    return;
+  }
+  if (openBtn) openBtn.disabled = false;
+  if (saveBtn) saveBtn.disabled = true;
+  if (cancelBtn) cancelBtn.disabled = true;
+}
+
+function setBuffCookieStatus(noCookie, text) {
+  const statusEl = el("buff-cookie-status");
+  if (!statusEl) return;
+  statusEl.classList.remove("is-ok", "is-missing", "is-unknown");
+  if (noCookie === true) {
+    statusEl.classList.add("is-missing");
+    statusEl.textContent = text || "未保存 Buff Cookie";
+  } else if (noCookie === false) {
+    statusEl.classList.add("is-ok");
+    statusEl.textContent = text || "已保存 Buff Cookie";
+  } else {
+    statusEl.classList.add("is-unknown");
+    statusEl.textContent = text || "Cookie 状态未知";
+  }
+}
+
+function setBuffAccountStatus(text) {
+  const statusEl = el("buff-account-status");
+  if (statusEl) statusEl.textContent = text;
+}
+
+async function refreshBuffAccountStatus() {
+  if (!el("buff-cookie-status")) return;
+  try {
+    const d = await fetchJson(API + "/status");
+    setBuffCookieStatus(!!d.buff_no_cookie);
+  } catch {
+    setBuffCookieStatus(null);
+  }
+}
+
+async function openBuffAccountBrowser() {
+  if (buffSettingsReloginStarted) return;
+  setBuffAccountActionState("busy");
+  setBuffAccountStatus("正在打开 Buff 浏览器，请稍候…");
+  try {
+    const r = await fetchJson(API + "/auth/buff/relogin_start", { method: "POST" });
+    if (r.ok) {
+      buffSettingsReloginStarted = true;
+      setBuffAccountActionState("started");
+      setBuffAccountStatus("浏览器已打开。请在 Buff 中登录、换号或完成验证；完成后回到这里保存 Cookie。");
+      toast("已打开 Buff 浏览器", r.message || "");
+    } else {
+      setBuffAccountActionState("idle");
+      setBuffAccountStatus("打开失败：" + (r.error || "请检查运行环境"));
+      toast("打开失败", r.error || "");
+    }
+  } catch (e) {
+    setBuffAccountActionState("idle");
+    setBuffAccountStatus("请求失败：" + (e.message || "请稍后再试"));
+    toast("请求失败", e.message || "");
+  }
+}
+
+async function finishBuffAccountBrowser(success) {
+  if (!buffSettingsReloginStarted) return;
+  setBuffAccountActionState("busy");
+  setBuffAccountStatus(success ? "正在保存 Buff Cookie，请稍候…" : "正在关闭 Buff 浏览器…");
+  try {
+    const r = await fetchJson(API + "/auth/buff/relogin_finish", {
+      method: "POST",
+      body: JSON.stringify({ success }),
+    });
+    if (!r.ok) throw new Error(r.error || "操作失败");
+    buffSettingsReloginStarted = false;
+    setBuffAccountActionState("idle");
+    if (success) {
+      setBuffAccountStatus("Buff Cookie 已保存。后续购买、验证和保活会使用这份登录状态。");
+      toast("Buff Cookie 已保存");
+      await refreshBuffAccountStatus();
+      if (typeof refreshStatus === "function") await refreshStatus();
+    } else {
+      setBuffAccountStatus("已取消本次 Buff 浏览器操作，未更新 Cookie。");
+      toast("已关闭 Buff 浏览器");
+    }
+  } catch (e) {
+    setBuffAccountActionState(buffSettingsReloginStarted ? "started" : "idle");
+    setBuffAccountStatus("操作失败：" + (e.message || "请稍后再试"));
+    toast("操作失败", e.message || "");
   }
 }
 

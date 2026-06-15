@@ -859,6 +859,94 @@ textarea::placeholder {
   resize: vertical;
 }
 
+.buff-account-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.buff-account-copy {
+  min-width: 0;
+}
+
+.buff-account-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.buff-account-desc,
+.buff-account-status {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.buff-cookie-status {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 12px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.buff-cookie-status.is-ok {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 38%, transparent);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+}
+
+.buff-cookie-status.is-missing {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 38%, transparent);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+.buff-cookie-status.is-unknown {
+  color: var(--text-muted);
+}
+
+.buff-account-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.buff-account-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.buff-account-status {
+  margin-top: 14px;
+}
+
+@media (max-width: 720px) {
+  .buff-account-summary {
+    flex-direction: column;
+  }
+
+  .buff-account-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .buff-account-actions .btn {
+    flex: 1 1 180px;
+  }
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
