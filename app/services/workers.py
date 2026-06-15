@@ -229,26 +229,50 @@ def exchange_rate_worker() -> None:
             time.sleep(300)
 def receive_worker() -> None:
     from app.receive_flow import try_receive_once
+    from app.buff_receipt_sync import sync_pending_receipts_from_buff_history
+    last_receipt_status_sync = 0.0
     while True:
         try:
             cfg = load_app_config_validated()
-            interval = max(10, int(cfg.get("pipeline", {}).get("receive_poll_interval_seconds", 30) or 30))
+            pipeline_cfg = cfg.get("pipeline", {}) or {}
+            interval = max(10, int(pipeline_cfg.get("receive_poll_interval_seconds", 30) or 30))
+            receipt_sync_interval = max(
+                60,
+                int(pipeline_cfg.get("receipt_status_sync_interval_seconds", 600) or 600),
+            )
             time.sleep(interval)
             if not is_steam_background_allowed():
                 continue
             purchases = get_purchases()
-            if not any(p.get("pending_receipt") and not p.get("assetid") for p in purchases):
+            pending_purchases = [p for p in purchases if p.get("pending_receipt")]
+            success_without_assetid = [
+                p
+                for p in purchases
+                if p.get("buff_order_id")
+                and not p.get("assetid")
+                and str(p.get("buff_state") or "").upper() in ("", "SUCCESS")
+            ]
+            if not pending_purchases and not success_without_assetid:
                 continue
-            n = try_receive_once(
-                get_purchases,
-                update_purchase,
-                lambda: (get_buff_credentials() or {}).get("cookies", ""),
-                get_steam_credentials,
-                scan_inventory=scan_cs2_inventory,
-                update_purchase_by_id=update_purchase_by_id,
-            )
-            if n > 0:
-                log(f"receive_worker: 本轮收取到 {n} 件物品", "info", category="receive")
+            if any(not p.get("assetid") for p in pending_purchases):
+                n = try_receive_once(
+                    get_purchases,
+                    update_purchase,
+                    lambda: (get_buff_credentials() or {}).get("cookies", ""),
+                    get_steam_credentials,
+                    scan_inventory=scan_cs2_inventory,
+                    update_purchase_by_id=update_purchase_by_id,
+                )
+                if n > 0:
+                    log(f"receive_worker: 本轮收取到 {n} 件物品", "info", category="receive")
+            now = time.time()
+            if now - last_receipt_status_sync >= receipt_sync_interval:
+                ok_sync, sync_result = sync_pending_receipts_from_buff_history(
+                    log_fn=lambda msg, level="info": log(msg, level, category="receive")
+                )
+                last_receipt_status_sync = now
+                if not ok_sync and sync_result.get("error"):
+                    log(f"Buff 订单同步失败: {sync_result.get('error')}", "warn", category="receive")
         except Exception as e:
             log(f"receive_worker 异常 {type(e).__name__}: {e}", "error", category="receive")
             _worker_alert("receive_worker", e)

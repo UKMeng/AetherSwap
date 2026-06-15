@@ -59,6 +59,7 @@ DEFAULTS = {
         "sell_pressure_orders_n": 5,
         "sell_pressure_threshold": 2.0,
         "receive_poll_interval_seconds": 30,
+        "receipt_status_sync_interval_seconds": 600,
         "listing_check_interval_seconds": 600,
         "max_listings_per_item": 5,
         "listing_delay_seconds": 3,

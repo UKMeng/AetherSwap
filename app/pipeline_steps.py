@@ -710,7 +710,15 @@ def _do_batch_wait_finalize_and_append(
     for m in matched:
         p = m.get("price", 0)
         total += p
-        rec = {"name": saved_name, "goods_id": goods_id, "price": p, "at": time.time(), "pending_receipt": True}
+        rec = {
+            "name": saved_name,
+            "goods_id": goods_id,
+            "price": p,
+            "at": time.time(),
+            "pending_receipt": True,
+        }
+        if m.get("bill_order_id"):
+            rec["buff_order_id"] = str(m.get("bill_order_id"))
         if market_price is not None and market_price > 0:
             rec["market_price"] = round(float(market_price), 2)
         append_purchase(rec)
@@ -759,7 +767,15 @@ def _do_wait_payment_and_append(
         mhn = (item.get("steam_market_name") or item.get("name") or "").strip()
         market_price = _fetch_smart_market_price(mhn, config, app_id=730)
     saved_name = (item.get("steam_market_name") or item.get("name") or "").strip()
-    base_rec = {"name": saved_name, "goods_id": goods_id, "price": unit_price, "at": time.time(), "pending_receipt": True}
+    base_rec = {
+        "name": saved_name,
+        "goods_id": goods_id,
+        "price": unit_price,
+        "at": time.time(),
+        "pending_receipt": True,
+    }
+    if order_id:
+        base_rec["buff_order_id"] = str(order_id)
     if market_price is not None and market_price > 0:
         base_rec["market_price"] = round(float(market_price), 2)
     for _ in range(num):

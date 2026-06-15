@@ -96,6 +96,8 @@ async function loadConfig() {
   const currentPriceRefreshEl = el("cfg-current-price-refresh-minutes");
   if (currentPriceRefreshEl) currentPriceRefreshEl.value = p.current_price_refresh_minutes ?? "";
   currentPriceRefreshMinutes = parseInt(p.current_price_refresh_minutes, 10) || currentPriceRefreshMinutes || 10;
+  const receiptStatusSyncEl = el("cfg-receipt-status-sync-seconds");
+  if (receiptStatusSyncEl) receiptStatusSyncEl.value = p.receipt_status_sync_interval_seconds ?? "";
   const gStartTimeLimitEnabled = el("cfg-start-time-limit-enabled");
   if (gStartTimeLimitEnabled) gStartTimeLimitEnabled.checked = !!p.start_time_limit_enabled;
   const gStartTimeHour = el("cfg-start-time-hour");
@@ -212,6 +214,7 @@ function formToConfig() {
       sell_pressure_orders_n: el("cfg-sell_pressure_orders_n") ? parseInt(el("cfg-sell_pressure_orders_n").value, 10) : undefined,
       sell_pressure_threshold: el("cfg-sell_pressure_threshold") ? parseFloat(el("cfg-sell_pressure_threshold").value) : undefined,
       current_price_refresh_minutes: el("cfg-current-price-refresh-minutes") ? parseInt(el("cfg-current-price-refresh-minutes").value, 10) || undefined : undefined,
+      receipt_status_sync_interval_seconds: el("cfg-receipt-status-sync-seconds") ? parseInt(el("cfg-receipt-status-sync-seconds").value, 10) || undefined : undefined,
       start_time_limit_enabled: !!el("cfg-start-time-limit-enabled")?.checked,
       start_time_hour: el("cfg-start-time-hour") ? (parseInt(el("cfg-start-time-hour").value, 10) >= 0 && parseInt(el("cfg-start-time-hour").value, 10) <= 23 ? parseInt(el("cfg-start-time-hour").value, 10) : undefined) : undefined,
       end_time_hour: el("cfg-end-time-hour") ? (parseInt(el("cfg-end-time-hour").value, 10) >= 0 && parseInt(el("cfg-end-time-hour").value, 10) <= 23 ? parseInt(el("cfg-end-time-hour").value, 10) : undefined) : undefined,

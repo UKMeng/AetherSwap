@@ -526,6 +526,7 @@
         <div class="panel-toolbar panel-toolbar--purchase-history">
           <div class="panel-toolbar-row">
             <span class="label">操作记录</span>
+            <button id="btn-refresh-receipt-status" class="btn btn-sm btn-secondary" type="button">刷新状态</button>
             <button id="btn-history-multiselect" class="btn btn-sm btn-secondary">多选</button>
             <div id="history-batch-actions" class="hidden" style="display:none;gap:8px;align-items:center;">
               <button id="btn-history-batch-del" class="btn btn-sm btn-danger-outline">批量删除</button>
@@ -1084,6 +1085,11 @@
                   <label>操作记录现市场价刷新间隔 (分钟)</label>
                   <input type="number" id="cfg-current-price-refresh-minutes" min="1" placeholder="10"
                     title="仅在此间隔过后再次打开/刷新操作记录时才请求 Steam 现价" />
+                </div>
+                <div class="field">
+                  <label>收货状态自动同步 (秒)</label>
+                  <input type="number" id="cfg-receipt-status-sync-seconds" min="60" placeholder="600"
+                    title="后台自动查询 Buff 买入订单状态的间隔；手动刷新不受此限制" />
                 </div>
                 <div class="field">
                   <label for="cfg-exchange-refresh-hours">汇率刷新间隔(小时)</label>
@@ -1880,7 +1886,7 @@
   <script src="/js/transactions.js"></script>
   <script src="/js/settings.js"></script>
   <script src="/js/proxy.js"></script>
-  <script src="/js/main.js?v=3"></script>
+  <script src="/js/main.js?v=4"></script>
   <script src="/js/gift.js"></script>
   <script src="/js/steamDeals.js"></script>
   <script>

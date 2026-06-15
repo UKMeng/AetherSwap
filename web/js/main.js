@@ -614,13 +614,36 @@ function bindEvents() {
         await refreshStatus();
         const u = r.updated ?? 0;
         const f = r.filled ?? 0;
-        if (u || f) toast("同步成功", `售出更新 ${u} 条，填充 assetid ${f} 条`);
+        const ru = r.receipt_updated ?? 0;
+        const ra = r.receipt_assetids ?? 0;
+        if (u || f || ru || ra) toast("同步成功", `售出更新 ${u} 条，填充 assetid ${f + ra} 条，收货状态 ${ru} 条`);
+        else if (r.receipt_error) toast("同步成功", `售出无变更；收货状态同步失败：${r.receipt_error}`);
         else toast("同步成功", "无变更");
       } else {
         toast("同步失败", r.error || "接口请求未返回 error 字段");
       }
     } catch (e) {
       toast("同步失败", e.message || "请求异常");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  el("btn-refresh-receipt-status")?.addEventListener("click", async () => {
+    const btn = el("btn-refresh-receipt-status");
+    if (btn?.disabled) return;
+    btn.disabled = true;
+    toast("正在刷新状态", "正在查询 Buff 订单…");
+    try {
+      const r = await fetchJson(API + "/sync_receipt_status", { method: "POST" });
+      if (r.ok) {
+        await refreshTransactions();
+        await refreshStatus();
+        toast("状态已刷新", `更新 ${r.updated ?? 0} 条，补全 assetid ${r.assetids ?? 0} 条`);
+      } else {
+        toast("刷新失败", r.error || "接口请求未返回 error 字段");
+      }
+    } catch (e) {
+      toast("刷新失败", e.message || "请求异常");
     } finally {
       btn.disabled = false;
     }

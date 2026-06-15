@@ -35,6 +35,9 @@ class Purchase(SQLModel, table=True):
     assetid: Optional[str] = None
     listing: Optional[bool] = None
     listing_status: Optional[str] = None
+    buff_order_id: Optional[str] = None
+    buff_state: Optional[str] = None
+    buff_state_text: Optional[str] = None
 class Sale(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = ""
@@ -120,6 +123,13 @@ def init_db() -> None:
         except Exception:
             pass  
     with engine.connect() as conn:
+        for column_name in ("buff_order_id", "buff_state", "buff_state_text"):
+            try:
+                conn.execute(sa_text(f"ALTER TABLE purchase ADD COLUMN {column_name} TEXT"))
+                conn.commit()
+            except Exception:
+                pass
+    with engine.connect() as conn:
         rows = conn.execute(
             sa_text("SELECT id, positive_rate, total_reviews FROM steamdealgame WHERE wilson_score IS NULL")
         ).fetchall()
@@ -144,6 +154,9 @@ def _purchase_from_dict(d: dict) -> Purchase:
         assetid=str(d["assetid"]) if d.get("assetid") is not None else None,
         listing=bool(d["listing"]) if d.get("listing") is not None else None,
         listing_status=str(d["listing_status"]) if d.get("listing_status") is not None else None,
+        buff_order_id=str(d["buff_order_id"]) if d.get("buff_order_id") is not None else None,
+        buff_state=str(d["buff_state"]) if d.get("buff_state") is not None else None,
+        buff_state_text=str(d["buff_state_text"]) if d.get("buff_state_text") is not None else None,
     )
 def _sale_from_dict(d: dict) -> Sale:
     return Sale(
@@ -175,6 +188,12 @@ def _purchase_to_dict(p: Purchase) -> dict:
         d["listing"] = p.listing
     if p.listing_status is not None:
         d["listing_status"] = p.listing_status
+    if p.buff_order_id is not None:
+        d["buff_order_id"] = p.buff_order_id
+    if p.buff_state is not None:
+        d["buff_state"] = p.buff_state
+    if p.buff_state_text is not None:
+        d["buff_state_text"] = p.buff_state_text
     return d
 def _sale_to_dict(s: Sale) -> dict:
     d = {
@@ -220,6 +239,7 @@ def migrate_from_json() -> bool:
 _PURCHASE_UPDATABLE = frozenset({
     "name", "price", "goods_id", "market_price", "sale_price",
     "sold_at", "pending_receipt", "assetid", "listing", "listing_status",
+    "buff_order_id", "buff_state", "buff_state_text",
 })
 _SALE_UPDATABLE = frozenset({"name", "price", "goods_id", "assetid", "at"})
 def db_append_purchase(p: dict) -> None:

@@ -131,6 +131,12 @@ def api_transactions(enrich_current_price: bool = False):
             row["listing"] = bool(p.get("listing"))
         if p.get("listing_status") is not None:
             row["listing_status"] = p.get("listing_status")
+        if p.get("buff_order_id") is not None:
+            row["buff_order_id"] = p.get("buff_order_id")
+        if p.get("buff_state") is not None:
+            row["buff_state"] = p.get("buff_state")
+        if p.get("buff_state_text") is not None:
+            row["buff_state_text"] = p.get("buff_state_text")
         out.append(row)
     for i, s in enumerate(sales):
         row = {"type": "sale", "idx": i, "name": s.get("name", ""), "goods_id": s.get("goods_id", ""), "price": float(s.get("price", 0)), "at": s.get("at", 0), "assetid": s.get("assetid") or ""}
@@ -266,21 +272,62 @@ def api_delist_purchase(idx: int):
 @router.post("/api/sync_sold_from_history")
 def api_sync_sold_from_history():
     from app.sync_sold import run_sync_sold_from_history
+    from app.buff_receipt_sync import sync_pending_receipts_from_buff_history
     def log_fn(msg: str, level: str = "info"):
         log(msg, level, category="sync_sold")
     try:
         ok, result = run_sync_sold_from_history(log_fn=log_fn)
         if not ok:
             return {"ok": False, "error": result.get("error", "同步失败")}
+        receipt_updated = 0
+        receipt_assetids = 0
+        receipt_error = ""
+        ok_receipt, receipt_result = sync_pending_receipts_from_buff_history(
+            log_fn=lambda msg, level="info": log(msg, level, category="receive")
+        )
+        if ok_receipt:
+            receipt_updated = int(receipt_result.get("updated", 0) or 0)
+            receipt_assetids = int(receipt_result.get("assetids", 0) or 0)
+        else:
+            receipt_error = str(receipt_result.get("error") or "")
+            if receipt_error:
+                log(f"Buff 收货状态同步失败: {receipt_error}", "warn", category="receive")
         reload_transactions()
-        return {
+        out = {
             "ok": True,
             "updated": result.get("updated", 0),
             "filled": result.get("filled", 0),
             "sold_count": result.get("sold_count", 0),
+            "receipt_updated": receipt_updated,
+            "receipt_assetids": receipt_assetids,
         }
+        if receipt_error:
+            out["receipt_error"] = receipt_error
+        return out
     except Exception as e:
         log(str(e), "error", category="sync_sold")
+        return {"ok": False, "error": str(e)[:200]}
+
+@router.post("/api/sync_receipt_status")
+def api_sync_receipt_status():
+    from app.buff_receipt_sync import sync_pending_receipts_from_buff_history
+
+    try:
+        ok, result = sync_pending_receipts_from_buff_history(
+            log_fn=lambda msg, level="info": log(msg, level, category="receive")
+        )
+        if not ok:
+            return {"ok": False, "error": result.get("error", "同步失败")}
+        reload_transactions()
+        return {
+            "ok": True,
+            "updated": result.get("updated", 0),
+            "exact": result.get("exact", 0),
+            "legacy": result.get("legacy", 0),
+            "assetids": result.get("assetids", 0),
+        }
+    except Exception as e:
+        log(str(e), "error", category="receive")
         return {"ok": False, "error": str(e)[:200]}
 @router.post("/api/repair_error_records")
 def api_repair_error_records():
